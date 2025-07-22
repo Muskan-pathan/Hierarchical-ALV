@@ -1,0 +1,123 @@
+REPORT ZDEMO_MUSKAN3.
+
+TABLES VBRK.
+
+TYPES: BEGIN OF lty_vbrk,
+       VBELN TYPE VBELN_VF,
+       FKART TYPE FKART,
+       FKTYP TYPE FKTYP,
+       BELNR TYPE BELNR_D,
+       END OF lty_vbrk.
+
+DATA: lt_vbrk TYPE TABLE OF lty_vbrk,
+      lwa_vbrk TYPE lty_vbrk.
+
+TYPES: BEGIN OF lty_vbrp,
+       VBELN TYPE VBELN_VF,
+       POSNR TYPE POSNR_VF,
+       FKIMG TYPE FKIMG,
+       FKLMG TYPE FKLMG,
+       END OF lty_vbrp.
+
+DATA: lt_vbrp TYPE TABLE OF lty_vbrp,
+      lwa_vbrp TYPE lty_vbrp.
+
+DATA: lt_fieldcat TYPE SLIS_T_FIELDCAT_ALV,
+      ls_fieldcat TYPE SLIS_FIELDCAT_ALV,
+      ls_keyinfo TYPE SLIS_KEYINFO_ALV.
+
+DATA: lv_vbeln TYPE VBELN_VF.
+
+SELECT-OPTIONS: s_bill FOR lv_vbeln.
+
+
+SELECT VBELN FKART FKTYP BELNR
+FROM VBRK
+INTO TABLE lt_vbrk
+WHERE vbeln IN s_bill.
+
+IF lt_vbrk IS NOT INITIAL.
+SELECT VBELN POSNR FKIMG FKLMG
+FROM VBRP
+INTO TABLE lt_vbrp
+FOR ALL ENTRIES IN lt_vbrk
+WHERE vbeln = lt_vbrk-vbeln.
+ENDIF.
+
+ls_fieldcat-col_pos = '1'.
+ls_fieldcat-fieldname = 'VBELN'.
+ls_fieldcat-seltext_l = 'Billing Doc.|'.
+ls_fieldcat-tabname   = 'lt_vbrk'.
+APPEND ls_fieldcat TO lt_fieldcat.
+CLEAR: ls_fieldcat.
+
+
+ls_fieldcat-col_pos = '2'.
+ls_fieldcat-fieldname = 'FKART'.
+ls_fieldcat-seltext_l = 'Billing Type |'.
+ls_fieldcat-tabname   = 'lt_vbrk'.
+APPEND ls_fieldcat TO lt_fieldcat.
+CLEAR: ls_fieldcat.
+
+
+ls_fieldcat-col_pos = '3'.
+ls_fieldcat-fieldname = 'FKTYP'.
+ls_fieldcat-seltext_l = 'Billing category |'.
+ls_fieldcat-tabname   = 'lt_vbrk'.
+APPEND ls_fieldcat TO lt_fieldcat.
+CLEAR: ls_fieldcat.
+
+
+ls_fieldcat-col_pos = '4'.
+ls_fieldcat-fieldname = 'BELNR'.
+ls_fieldcat-seltext_l = 'Document Number of an Accounting Doc |'.
+ls_fieldcat-tabname   = 'lt_vbrk'.
+APPEND ls_fieldcat TO lt_fieldcat.
+CLEAR: ls_fieldcat.
+
+ls_fieldcat-col_pos = '1'.
+ls_fieldcat-fieldname = 'VBELN'.
+ls_fieldcat-seltext_l = 'Billing Doc.|'.
+ls_fieldcat-tabname   = 'lt_vbrp'.
+APPEND ls_fieldcat TO lt_fieldcat.
+CLEAR: ls_fieldcat.
+
+ls_fieldcat-col_pos = '2'.
+ls_fieldcat-fieldname = 'FKIMG'.
+ls_fieldcat-seltext_l = 'Invoiced Quantity |'.
+ls_fieldcat-tabname   = 'lt_vbrp'.
+APPEND ls_fieldcat TO lt_fieldcat.
+CLEAR: ls_fieldcat.
+
+ls_fieldcat-col_pos = '3'.
+ls_fieldcat-fieldname = 'FKLMG'.
+ls_fieldcat-seltext_l = 'Billing quantity in stockkeeping unit |'.
+ls_fieldcat-tabname   = 'lt_vbrp'.
+APPEND ls_fieldcat TO lt_fieldcat.
+CLEAR: ls_fieldcat.
+
+IF sy-subrc <> 0.
+MESSAGE 'Error creating fieldcat' TYPE 'E'.
+ENDIF.
+
+ls_keyinfo-header01 = 'VBELN'.
+ls_keyinfo-item01   = 'VBELN'.
+
+CALL FUNCTION 'REUSE_ALV_HIERSEQ_LIST_DISPLAY'
+  EXPORTING
+   IT_FIELDCAT                     = lt_fieldcat
+    i_tabname_header               = 'lt_vbrk'
+    i_tabname_item                 = 'lt_vbrp'
+   I_STRUCTURE_NAME_HEADER        = 'lty_vbrk'
+   I_STRUCTURE_NAME_ITEM          = 'lty_vbrp'
+    is_keyinfo                     = ls_keyinfo
+  TABLES
+    t_outtab_header                = lt_vbrk
+    t_outtab_item                  = lt_vbrp
+ EXCEPTIONS
+   PROGRAM_ERROR                  = 1
+   OTHERS                         = 2
+          .
+IF sy-subrc <> 0.
+MESSAGE 'error displaying ALV' TYPE 'E'.
+ENDIF.
